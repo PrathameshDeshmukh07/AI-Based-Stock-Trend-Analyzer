@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Stock Trend Analyzer — Probabilistic Forecasting</title>
+    <meta name="description" content="AI-powered stock trend analyzer using ARIMA and Exponential Smoothing for probabilistic time-series forecasting with confidence intervals." />
+    <meta name="keywords" content="stock, trend, analyzer, AI, ARIMA, time-series, forecast, prediction, probabilistic" />
+
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+    <!-- ── Background Particles ────────────────────────────────────────── -->
+    <div class="bg-particles" id="bgParticles"></div>
+
+    <!-- ── Header ──────────────────────────────────────────────────────── -->
+    <header class="header" id="header">
+        <div class="header-left">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i data-lucide="trending-up"></i>
+                </div>
+                <div>
+                    <h1 class="logo-text">StockAI</h1>
+                    <span class="logo-sub">Trend Analyzer</span>
+                </div>
+            </div>
+        </div>
+        <div class="header-center">
+            <div class="search-container" id="searchContainer">
+                <i data-lucide="search" class="search-icon"></i>
+                <input
+                    type="text"
+                    id="searchInput"
+                    class="search-input"
+                    placeholder="Search stock symbol (e.g. AAPL, TSLA, RELIANCE.NS)..."
+                    autocomplete="off"
+                />
+                <div class="search-dropdown" id="searchDropdown"></div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="period-selector">
+                <button class="period-btn" data-period="1mo">1M</button>
+                <button class="period-btn" data-period="3mo">3M</button>
+                <button class="period-btn" data-period="6mo">6M</button>
+                <button class="period-btn active" data-period="1y">1Y</button>
+                <button class="period-btn" data-period="2y">2Y</button>
+                <button class="period-btn" data-period="5y">5Y</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ── Main Content ────────────────────────────────────────────────── -->
+    <main class="main">
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loader">
+                <div class="loader-ring"></div>
+                <div class="loader-ring"></div>
+                <div class="loader-ring"></div>
+                <p class="loader-text">Analyzing stock trends...</p>
+            </div>
+        </div>
+
+        <!-- Welcome Screen -->
+        <div class="welcome-screen" id="welcomeScreen">
+            <div class="welcome-content">
+                <div class="welcome-icon">
+                    <i data-lucide="bar-chart-3"></i>
+                </div>
+                <h2>AI-Based Stock Trend Analyzer</h2>
+                <p>Probabilistic time-series forecasting powered by ARIMA &amp; Exponential Smoothing</p>
+                <div class="welcome-features">
+                    <div class="welcome-feature">
+                        <i data-lucide="brain"></i>
+                        <span>Probabilistic Learning</span>
+                    </div>
+                    <div class="welcome-feature">
+                        <i data-lucide="trending-up"></i>
+                        <span>Trend Forecasting</span>
+                    </div>
+                    <div class="welcome-feature">
+                        <i data-lucide="shield-check"></i>
+                        <span>Confidence Intervals</span>
+                    </div>
+                </div>
+                <div class="popular-stocks" id="popularStocks">
+                    <p class="popular-label">Popular stocks:</p>
+                    <div class="popular-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard (hidden by default) -->
+        <div class="dashboard" id="dashboard" style="display: none;">
+            <!-- Stock Info Bar -->
+            <div class="stock-info-bar" id="stockInfoBar">
+                <div class="stock-title">
+                    <h2 id="stockName">—</h2>
+                    <span class="stock-symbol" id="stockSymbol">—</span>
+                    <span class="stock-sector" id="stockSector">—</span>
+                </div>
+                <div class="stock-price-info">
+                    <span class="current-price" id="currentPrice">—</span>
+                    <span class="price-change" id="priceChange">—</span>
+                </div>
+            </div>
+
+            <!-- Trend Summary Cards -->
+            <div class="trend-cards" id="trendCards">
+                <div class="card trend-card" id="trendDirectionCard">
+                    <div class="card-header">
+                        <i data-lucide="compass"></i>
+                        <span>Trend Direction</span>
+                    </div>
+                    <div class="card-value" id="trendDirection">—</div>
+                    <div class="card-sub" id="trendStrength">Strength: —</div>
+                </div>
+                <div class="card trend-card">
+                    <div class="card-header">
+                        <i data-lucide="target"></i>
+                        <span>Predicted Price</span>
+                    </div>
+                    <div class="card-value" id="predictedPrice">—</div>
+                    <div class="card-sub" id="predictedChange">Change: —</div>
+                </div>
+                <div class="card trend-card">
+                    <div class="card-header">
+                        <i data-lucide="arrow-up-circle"></i>
+                        <span>Probability Up</span>
+                    </div>
+                    <div class="card-value" id="probUp">—</div>
+                    <div class="prob-bar">
+                        <div class="prob-fill up" id="probUpBar"></div>
+                    </div>
+                </div>
+                <div class="card trend-card">
+                    <div class="card-header">
+                        <i data-lucide="arrow-down-circle"></i>
+                        <span>Probability Down</span>
+                    </div>
+                    <div class="card-value" id="probDown">—</div>
+                    <div class="prob-bar">
+                        <div class="prob-fill down" id="probDownBar"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Price Chart -->
+            <div class="card chart-card" id="priceChartCard">
+                <div class="card-header">
+                    <i data-lucide="line-chart"></i>
+                    <span>Price History &amp; Forecast</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Indicators Row -->
+            <div class="indicators-row">
+                <!-- RSI Chart -->
+                <div class="card indicator-card" id="rsiCard">
+                    <div class="card-header">
+                        <i data-lucide="activity"></i>
+                        <span>RSI (14)</span>
+                        <span class="indicator-value" id="rsiValue">—</span>
+                    </div>
+                    <div class="chart-container small">
+                        <canvas id="rsiChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- MACD Chart -->
+                <div class="card indicator-card" id="macdCard">
+                    <div class="card-header">
+                        <i data-lucide="git-branch"></i>
+                        <span>MACD</span>
+                        <span class="indicator-value" id="macdValue">—</span>
+                    </div>
+                    <div class="chart-container small">
+                        <canvas id="macdChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Volume Chart -->
+            <div class="card chart-card" id="volumeCard">
+                <div class="card-header">
+                    <i data-lucide="bar-chart-2"></i>
+                    <span>Volume Analysis</span>
+                </div>
+                <div class="chart-container small">
+                    <canvas id="volumeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Technical Indicators Summary -->
+            <div class="card indicators-summary" id="indicatorsSummary">
+                <div class="card-header">
+                    <i data-lucide="gauge"></i>
+                    <span>Technical Indicators Summary</span>
+                </div>
+                <div class="indicators-grid" id="indicatorsGrid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Disclaimer -->
+            <div class="disclaimer">
+                <i data-lucide="alert-triangle"></i>
+                <p>
+                    <strong>Disclaimer:</strong> This tool uses AI-based probabilistic models (ARIMA + Exponential Smoothing) for educational purposes only.
+                    Predictions are not financial advice. Past performance does not guarantee future results. Always consult a qualified financial advisor.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>AI-Based Stock Trend Analyzer &bull; Probabilistic Learning &bull; Time-Series Forecasting</p>
+    </footer>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
