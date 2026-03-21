@@ -9,10 +9,17 @@ from flask import Flask, jsonify, request, send_from_directory
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import os
+import requests
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from statsmodels.tsa.arima.model import ARIMA
 from scipy import stats
 import warnings
+
+# Vercel has read-only filesystems except for /tmp
+if hasattr(yf, 'set_tz_cache_location'):
+    yf.set_tz_cache_location("/tmp")
+
 
 warnings.filterwarnings("ignore")
 
@@ -45,11 +52,20 @@ POPULAR_STOCKS = [
 ]
 
 
+# Simple memory cache for fetched data
+_data_cache = {}
+CACHE_DURATION = 3600  # 1 hour
+
 # ── Helper: Fetch Stock Data ────────────────────────────────────────────────
 def fetch_stock_data(symbol, period="1y"):
     """Fetch historical stock data using yfinance."""
     try:
-        ticker = yf.Ticker(symbol)
+        # Vercel IPs often get blocked by Yahoo Finance; using a custom session with a standard browser User-Agent helps bypass this
+        session = requests.Session()
+        session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        })
+        ticker = yf.Ticker(symbol, session=session)
         hist = ticker.history(period=period)
         if hist.empty:
             return None, None
@@ -220,7 +236,8 @@ def predict_trend(df, forecast_days=30):
 
     # ── Probability Calculation ──────────────────────────────────────────
     # Use recent returns to compute probability of positive/negative movement
-    returns = np.diff(close[-60:]) / close[-61:-1]
+    recent_close = close[-60:]
+    returns = np.diff(recent_close) / recent_close[:-1]
     prob_up = float(np.mean(returns > 0))
     prob_down = 1 - prob_up
 
@@ -345,6 +362,86 @@ def get_indicators(symbol):
         },
     }
     return jsonify(data)
+
+
+@app.route("/api/chat", methods=["POST"])
+def chat():
+    """Dynamic AI chatbot for stock queries."""
+    data = request.get_json()
+    if not data or "message" not in data:
+        return jsonify({"reply": "I'm sorry, I didn't catch that."}), 400
+
+    msg = data["message"].lower()
+    symbol = data.get("symbol", "").upper()
+    has_symbol = bool(symbol and symbol != "—" and symbol.strip())
+
+    if "hello" in msg or "hi" in msg:
+        return jsonify({"reply": "Hello there! I'm your AI Stock Assistant. How can I help you analyze the market today?"})
+
+    elif "predict" in msg or "trend" in msg or "forecast" in msg or "target" in msg:
+        if not has_symbol:
+            return jsonify({"reply": "Please search for a stock first so I can forecast it!"})
+            
+        df, info = fetch_stock_data(symbol, "1y")
+        if df is None:
+            return jsonify({"reply": f"Sorry, I couldn't fetch data for {symbol}."})
+            
+        pred = predict_trend(df)
+        if pred:
+            price = pred["predicted_price"]
+            trend = pred["trend"].title()
+            return jsonify({"reply": f"Based on my ARIMA and Exponential Smoothing models, the 30-day forecast for {symbol} is **{trend}**, with a target price of **${price}**."})
+        else:
+            return jsonify({"reply": f"Sorry, there is not enough historical data to generate a confident prediction for {symbol} right now."})
+            
+    elif "price" in msg or "quote" in msg or "how much" in msg:
+        if not has_symbol:
+             return jsonify({"reply": "Please search for a stock first so I can check its price!"})
+             
+        df, info = fetch_stock_data(symbol, "1mo")
+        if df is None:
+            return jsonify({"reply": f"Sorry, I couldn't fetch the price for {symbol}."})
+            
+        current_price = df["Close"].iloc[-1]
+        return jsonify({"reply": f"The current real-time price of **{symbol}** is **${current_price:.2f}**."})
+
+    elif "rsi" in msg:
+        if not has_symbol:
+            return jsonify({"reply": "The Relative Strength Index (RSI) measures momentum. Over 70 is overbought, under 30 is oversold. Search a stock to see its RSI!"})
+            
+        df, info = fetch_stock_data(symbol, "6mo")
+        if df is None:
+             return jsonify({"reply": f"Sorry, I couldn't fetch data for {symbol}."})
+             
+        inds = compute_indicators(df)
+        rsi = inds["rsi"].dropna().iloc[-1]
+        
+        status = "neutral"
+        if rsi > 70: status = "**overbought**"
+        elif rsi < 30: status = "**oversold**"
+        
+        return jsonify({"reply": f"The current RSI for {symbol} is **{rsi:.1f}**. This indicates the stock is currently {status}."})
+        
+    elif "macd" in msg:
+        if not has_symbol:
+            return jsonify({"reply": "MACD is a trend-following momentum indicator. Search a stock to see its live MACD!"})
+            
+        df, info = fetch_stock_data(symbol, "6mo")
+        if df is None:
+             return jsonify({"reply": f"Sorry, I couldn't fetch data for {symbol}."})
+             
+        inds = compute_indicators(df)
+        macd = inds["macd_line"].dropna().iloc[-1]
+        signal = inds["signal_line"].dropna().iloc[-1]
+        
+        status = "**bullish** setup" if macd > signal else "**bearish** setup"
+        
+        return jsonify({"reply": f"The MACD line for {symbol} is at **{macd:.2f}**, and the Signal line is at **{signal:.2f}**. Since the MACD is {'above' if macd > signal else 'below'} the signal, this is a {status}."})
+
+    elif "thank" in msg:
+        return jsonify({"reply": "You're welcome! Let me know if you need anything else."})
+        
+    return jsonify({"reply": "I'm still learning! Right now I can tell you the real-time **price**, **forecast**, **RSI**, or **MACD** of the stock you are viewing. Try asking me one of those!"})
 
 
 @app.route("/api/search")

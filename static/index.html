@@ -230,6 +230,35 @@
         </div>
     </main>
 
+    <!-- Chatbot FAB -->
+    <button class="chat-fab" id="chatFab">
+        <img src="/img/chatbot_avatar.png" alt="Chatbot" class="fab-avatar" />
+    </button>
+
+    <!-- Chatbot Window -->
+    <div class="chat-window" id="chatWindow">
+        <div class="chat-header">
+            <div class="chat-title">
+                <img src="/img/chatbot_avatar.png" alt="Avatar" class="title-avatar" />
+                <span>StockAI Assistant</span>
+            </div>
+            <button class="chat-close" id="chatClose">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="chat-bubble bot">
+                Hello! I can help you analyze stock trends and answer questions about technical indicators. What would you like to know?
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Ask about stocks..." autocomplete="off" />
+            <button id="chatSend">
+                <i data-lucide="send"></i>
+            </button>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="footer">
         <p>AI-Based Stock Trend Analyzer &bull; Probabilistic Learning &bull; Time-Series Forecasting</p>

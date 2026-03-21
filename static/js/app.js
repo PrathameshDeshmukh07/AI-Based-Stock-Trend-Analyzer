@@ -811,3 +811,85 @@ function showLoading() {
 function hideLoading() {
     loadingOverlay.classList.remove("show");
 }
+
+// %% Chatbot %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+document.addEventListener('DOMContentLoaded', () => {
+    const chatFab = $('chatFab');
+    const chatWindow = $('chatWindow');
+    const chatClose = $('chatClose');
+    const chatSend = $('chatSend');
+    const chatInput = $('chatInput');
+    const chatMessages = $('chatMessages');
+
+    function toggleChat() {
+        chatWindow.classList.toggle('open');
+        if (chatWindow.classList.contains('open')) {
+            setTimeout(() => chatInput.focus(), 300);
+        }
+    }
+
+    chatFab.addEventListener('click', toggleChat);
+    chatClose.addEventListener('click', toggleChat);
+
+    function addMessage(text, sender) {
+        const bubble = document.createElement('div');
+        bubble.className = `chat-bubble ${sender}`;
+        bubble.textContent = text;
+        chatMessages.appendChild(bubble);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function addTypingIndicator() {
+        const indicator = document.createElement('div');
+        indicator.className = 'typing-indicator';
+        indicator.id = 'typingIndicator';
+        indicator.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+        chatMessages.appendChild(indicator);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+        const indicator = typingIndicator;
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    async function sendMessage() {
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        chatInput.value = '';
+        addMessage(text, 'user');
+        addTypingIndicator();
+
+        try {
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    message: text,
+                    symbol: state.symbol || ' '
+                })
+            });
+            const data = await res.json();
+            
+            removeTypingIndicator();
+            if (data.reply) {
+                addMessage(data.reply, 'bot');
+            }
+        } catch (err) {
+            removeTypingIndicator();
+            addMessage('Sorry, I encountered an error connecting to the server.', 'bot');
+            console.error('Chat error:', err);
+        }
+    }
+
+    chatSend.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+});
+
