@@ -465,7 +465,13 @@ def search_stocks():
 # ══════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
+    import os
+    port = int(os.environ.get("PORT", 5000))
     print("\n  🚀  AI-Based Stock Trend Analyzer")
     print("  ──────────────────────────────────")
-    print("  Open http://localhost:5000 in your browser\n")
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    print(f"  Starting server on port {port}...\n")
+    try:
+        from waitress import serve
+        serve(app, host="0.0.0.0", port=port)
+    except ImportError:
+        app.run(debug=True, host="0.0.0.0", port=port)
