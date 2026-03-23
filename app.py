@@ -60,12 +60,7 @@ CACHE_DURATION = 3600  # 1 hour
 def fetch_stock_data(symbol, period="1y"):
     """Fetch historical stock data using yfinance."""
     try:
-        # Vercel IPs often get blocked by Yahoo Finance; using a custom session with a standard browser User-Agent helps bypass this
-        session = requests.Session()
-        session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        })
-        ticker = yf.Ticker(symbol, session=session)
+        ticker = yf.Ticker(symbol)
         hist = ticker.history(period=period)
         if hist.empty:
             return None, None
