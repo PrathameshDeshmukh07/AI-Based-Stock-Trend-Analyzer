@@ -23,13 +23,16 @@ if hasattr(yf, 'set_tz_cache_location'):
 
 warnings.filterwarnings("ignore")
 
-app = Flask(__name__, static_folder="static", static_url_path="")
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+
+app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="")
 
 
 # ── Serve Frontend ────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
-    return send_from_directory("static", "index.html")
+    return app.send_static_file("index.html")
 
 
 # ── Popular Stocks for Default View ──────────────────────────────────────────
@@ -466,7 +469,7 @@ def search_stocks():
 
 if __name__ == "__main__":
     import os
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 8080))
     print("\n  🚀  AI-Based Stock Trend Analyzer")
     print("  ──────────────────────────────────")
     print(f"  Starting server on port {port}...\n")
@@ -474,4 +477,4 @@ if __name__ == "__main__":
         from waitress import serve
         serve(app, host="0.0.0.0", port=port)
     except ImportError:
-        app.run(debug=True, host="0.0.0.0", port=port)
+        app.run(debug=False, host="0.0.0.0", port=port)
