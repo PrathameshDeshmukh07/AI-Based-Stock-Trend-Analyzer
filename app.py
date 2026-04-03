@@ -16,10 +16,6 @@ from statsmodels.tsa.arima.model import ARIMA
 from scipy import stats
 import warnings
 
-# Vercel has read-only filesystems except for /tmp
-if hasattr(yf, 'set_tz_cache_location'):
-    yf.set_tz_cache_location("/tmp")
-
 
 warnings.filterwarnings("ignore")
 
@@ -473,8 +469,4 @@ if __name__ == "__main__":
     print("\n  🚀  AI-Based Stock Trend Analyzer")
     print("  ──────────────────────────────────")
     print(f"  Starting server on port {port}...\n")
-    try:
-        from waitress import serve
-        serve(app, host="0.0.0.0", port=port)
-    except ImportError:
-        app.run(debug=False, host="0.0.0.0", port=port)
+    app.run(debug=True, host="0.0.0.0", port=port)

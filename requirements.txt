@@ -5,4 +5,3 @@ pandas==2.2.3
 numpy==2.2.3
 statsmodels==0.14.4
 scipy==1.15.2
-waitress
