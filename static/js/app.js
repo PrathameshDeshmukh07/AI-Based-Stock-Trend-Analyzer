@@ -22,22 +22,51 @@ const searchInput = $("searchInput");
 const searchDropdown = $("searchDropdown");
 
 // ── Chart.js Defaults ────────────────────────────────────────────────────────
-Chart.defaults.color = "#94a3b8";
-Chart.defaults.borderColor = "rgba(255,255,255,0.04)";
+function applyChartTheme(theme) {
+    const isDark = theme !== "light";
+    Chart.defaults.color = isDark ? "#94a3b8" : "#64748b";
+    Chart.defaults.borderColor = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.06)";
+    Chart.defaults.plugins.tooltip.backgroundColor = isDark ? "rgba(17, 24, 39, 0.95)" : "rgba(255, 255, 255, 0.95)";
+    Chart.defaults.plugins.tooltip.titleColor = isDark ? "#f1f5f9" : "#1e293b";
+    Chart.defaults.plugins.tooltip.bodyColor = isDark ? "#94a3b8" : "#475569";
+    Chart.defaults.plugins.tooltip.borderColor = isDark ? "rgba(99, 102, 241, 0.3)" : "rgba(99, 102, 241, 0.2)";
+}
 Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
 Chart.defaults.plugins.legend.labels.usePointStyle = true;
 Chart.defaults.plugins.legend.labels.pointStyleWidth = 10;
-Chart.defaults.plugins.tooltip.backgroundColor = "rgba(17, 24, 39, 0.95)";
-Chart.defaults.plugins.tooltip.borderColor = "rgba(99, 102, 241, 0.3)";
 Chart.defaults.plugins.tooltip.borderWidth = 1;
 Chart.defaults.plugins.tooltip.cornerRadius = 10;
 Chart.defaults.plugins.tooltip.padding = 12;
 Chart.defaults.plugins.tooltip.titleFont = { weight: "600", size: 13 };
 Chart.defaults.plugins.tooltip.bodyFont = { size: 12 };
+applyChartTheme(localStorage.getItem("stockai-theme") || "dark");
+
+// ── Theme Toggle ─────────────────────────────────────────────────────────────
+function setupThemeToggle() {
+    const toggle = document.getElementById("themeToggle");
+    const saved = localStorage.getItem("stockai-theme") || "dark";
+    document.documentElement.setAttribute("data-theme", saved);
+
+    toggle.addEventListener("click", () => {
+        const cur = document.documentElement.getAttribute("data-theme");
+        const next = cur === "light" ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", next);
+        localStorage.setItem("stockai-theme", next);
+        applyChartTheme(next);
+        // Re-render charts so grid/tooltip colours update
+        if (state.stockData) {
+            renderPriceChart();
+            renderRSIChart();
+            renderMACDChart();
+            renderVolumeChart();
+        }
+    });
+}
 
 // ── Initialize ───────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
     lucide.createIcons();
+    setupThemeToggle();
     setupSearch();
     setupPeriodButtons();
     loadPopularStocks();
@@ -149,11 +178,13 @@ async function loadStock(symbol) {
     showLoading();
 
     try {
-        // Fetch all data in parallel
+        // Fetch all data in parallel, but enforce a minimum 4000ms loading time 
+        // to let the premium loading animations play out completely.
         const [stockRes, predRes, indRes] = await Promise.all([
             fetch(`/api/stock/${state.symbol}?period=${state.period}`),
             fetch(`/api/predict/${state.symbol}?period=${state.period}&days=30`),
             fetch(`/api/indicators/${state.symbol}?period=${state.period}`),
+            new Promise(resolve => setTimeout(resolve, 4000)) // Enforce 4s minimum wait
         ]);
 
         if (!stockRes.ok) {
@@ -804,12 +835,79 @@ function renderIndicatorsSummary() {
 }
 
 // ── Loading ──────────────────────────────────────────────────────────────────
+let _loaderInterval = null;
+let _loaderStep = 0;
+let _constellationAnimId = null;
+
+const LOADER_MESSAGES = [
+    "Fetching historical prices...",
+    "Downloading market data...",
+    "Running ARIMA model...",
+    "Applying Exponential Smoothing...",
+    "Computing technical indicators...",
+    "Calculating RSI & MACD...",
+    "Generating probability forecast...",
+    "Building confidence intervals...",
+    "Rendering visualizations...",
+];
+
 function showLoading() {
     loadingOverlay.classList.add("show");
+    _loaderStep = 0;
+    let msgIdx = 0;
+
+    // Reset progress
+    const bar = document.getElementById("loaderProgressBar");
+    const status = document.getElementById("loaderStatus");
+    if (bar) bar.style.width = "0%";
+
+    // Reset steps
+    ["step1","step2","step3"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.classList.remove("active"); }
+    });
+    const s1 = document.getElementById("step1");
+    if (s1) s1.classList.add("active");
+
+    // Animate progress and steps
+    _loaderInterval = setInterval(() => {
+        _loaderStep++;
+
+        // Rotate status message
+        msgIdx = (msgIdx + 1) % LOADER_MESSAGES.length;
+        if (status) status.textContent = LOADER_MESSAGES[msgIdx];
+
+        // Advance progress bar (max 95%)
+        const progress = Math.min(10 + _loaderStep * 8, 95);
+        if (bar) bar.style.width = progress + "%";
+
+        // Advance step indicators (total 3 steps, so spread them out)
+        if (_loaderStep === 4) {
+            const s1 = document.getElementById("step1");
+            const s2 = document.getElementById("step2");
+            if (s1) { s1.classList.remove("active"); }
+            if (s2) s2.classList.add("active");
+        }
+        if (_loaderStep === 8) {
+            const s2 = document.getElementById("step2");
+            const s3 = document.getElementById("step3");
+            if (s2) { s2.classList.remove("active"); }
+            if (s3) s3.classList.add("active");
+        }
+    }, 500);
 }
 
 function hideLoading() {
-    loadingOverlay.classList.remove("show");
+    // Complete the progress to 100%
+    const bar = document.getElementById("loaderProgressBar");
+    if (bar) bar.style.width = "100%";
+
+    // Short delay for the 100% fill to render before hiding
+    setTimeout(() => {
+        loadingOverlay.classList.remove("show");
+        clearInterval(_loaderInterval);
+        _loaderInterval = null;
+    }, 400);
 }
 
 // %% Chatbot %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

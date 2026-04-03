@@ -52,6 +52,31 @@
             </div>
         </div>
         <div class="header-right">
+            <!-- Theme Toggle -->
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle dark / light theme">
+                <div class="toggle-track">
+                    <div class="toggle-celestial">
+                        <div class="sun-ray ray-1"></div>
+                        <div class="sun-ray ray-2"></div>
+                        <div class="sun-ray ray-3"></div>
+                        <div class="sun-ray ray-4"></div>
+                        <div class="sun-ray ray-5"></div>
+                        <div class="sun-ray ray-6"></div>
+                        <div class="sun-ray ray-7"></div>
+                        <div class="sun-ray ray-8"></div>
+                        <div class="celestial-body">
+                            <div class="crater crater-1"></div>
+                            <div class="crater crater-2"></div>
+                            <div class="crater crater-3"></div>
+                        </div>
+                    </div>
+                    <div class="toggle-stars">
+                        <div class="star star-1"></div>
+                        <div class="star star-2"></div>
+                        <div class="star star-3"></div>
+                    </div>
+                </div>
+            </button>
             <div class="period-selector">
                 <button class="period-btn" data-period="1mo">1M</button>
                 <button class="period-btn" data-period="3mo">3M</button>
@@ -67,39 +92,136 @@
     <main class="main">
         <!-- Loading Overlay -->
         <div class="loading-overlay" id="loadingOverlay">
-            <div class="loader">
-                <div class="loader-ring"></div>
-                <div class="loader-ring"></div>
-                <div class="loader-ring"></div>
-                <p class="loader-text">Analyzing stock trends...</p>
+            <div class="loader-content">
+                <!-- Sleek animated graph card -->
+                <div class="loader-graph-card">
+                    <svg class="loader-chart-svg" viewBox="0 0 400 150" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id="chartGradient" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" stop-color="#8b5cf6" />
+                                <stop offset="50%" stop-color="#06b6d4" />
+                                <stop offset="100%" stop-color="#10b981" />
+                            </linearGradient>
+                            <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="rgba(16, 185, 129, 0.3)" />
+                                <stop offset="100%" stop-color="rgba(16, 185, 129, 0)" />
+                            </linearGradient>
+                        </defs>
+                        <!-- Area fill -->
+                        <path class="chart-area-fill" d="M 50,100 Q 100,80 150,85 T 250,70 Q 280,-20 310,80 Q 330,-40 340,30 L 340,150 L 50,150 Z" fill="url(#areaGradient)" />
+                        <!-- Stroke line -->
+                        <path class="chart-stroke-line" d="M 50,100 Q 100,80 150,85 T 250,70 Q 280,-20 310,80 Q 330,-40 340,30" stroke="url(#chartGradient)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                    </svg>
+                </div>
+                
+                <!-- Thin Progress Bar -->
+                <div class="loader-progress-slim">
+                    <div class="loader-progress-slim-bar" id="loaderProgressBar"></div>
+                </div>
+                
+                <!-- Status Text -->
+                <p class="loader-status-text" id="loaderStatus">Fetching market data...</p>
+                
+                <!-- Clean Steps -->
+                <div class="loader-steps-clean">
+                    <div class="step-clean active" id="step1">
+                        <i data-lucide="download-cloud"></i>
+                        <span>FETCHING</span>
+                    </div>
+                    <span class="step-separator">-</span>
+                    <div class="step-clean" id="step2">
+                        <i data-lucide="cpu"></i>
+                        <span>ANALYZING</span>
+                    </div>
+                    <span class="step-separator">-</span>
+                    <div class="step-clean" id="step3">
+                        <i data-lucide="sparkles"></i>
+                        <span>PREDICTING</span>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Welcome Screen -->
         <div class="welcome-screen" id="welcomeScreen">
             <div class="welcome-content">
-                <div class="welcome-icon">
-                    <i data-lucide="bar-chart-3"></i>
+                <!-- Badge -->
+                <div class="welcome-badge">
+                    <span class="badge-dot"></span>
+                    <span>AI-Powered Analytics</span>
                 </div>
-                <h2>AI-Based Stock Trend Analyzer</h2>
-                <p>Probabilistic time-series forecasting powered by ARIMA &amp; Exponential Smoothing</p>
-                <div class="welcome-features">
-                    <div class="welcome-feature">
-                        <i data-lucide="brain"></i>
-                        <span>Probabilistic Learning</span>
+
+                <!-- Hero Heading -->
+                <h2 class="hero-heading">
+                    Predict Stock Trends<br>with <span class="gradient-text">AI Precision</span>
+                </h2>
+
+                <!-- Subtitle -->
+                <p class="hero-subtitle">
+                    Harness the power of ARIMA &amp; Exponential Smoothing for<br>
+                    probabilistic forecasting with confidence intervals.
+                </p>
+
+                <!-- Search Hint -->
+                <div class="search-hint">
+                    <i data-lucide="search"></i>
+                    <span>Type a stock symbol above to get started</span>
+                </div>
+
+                <!-- Feature Cards -->
+                <div class="feature-cards">
+                    <div class="feature-card">
+                        <div class="feature-icon purple">
+                            <i data-lucide="brain"></i>
+                        </div>
+                        <h3>Probabilistic Models</h3>
+                        <p>ARIMA + Exponential Smoothing ensemble for robust predictions</p>
                     </div>
-                    <div class="welcome-feature">
-                        <i data-lucide="trending-up"></i>
-                        <span>Trend Forecasting</span>
+                    <div class="feature-card">
+                        <div class="feature-icon green">
+                            <i data-lucide="trending-up"></i>
+                        </div>
+                        <h3>Trend Forecasting</h3>
+                        <p>30-day forecasts with bullish/bearish probability analysis</p>
                     </div>
-                    <div class="welcome-feature">
-                        <i data-lucide="shield-check"></i>
-                        <span>Confidence Intervals</span>
+                    <div class="feature-card">
+                        <div class="feature-icon blue">
+                            <i data-lucide="shield-check"></i>
+                        </div>
+                        <h3>Confidence Intervals</h3>
+                        <p>80% and 95% confidence bands for risk-aware decisions</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon cyan">
+                            <i data-lucide="activity"></i>
+                        </div>
+                        <h3>Technical Indicators</h3>
+                        <p>RSI, MACD, Bollinger Bands &amp; moving averages at a glance</p>
                     </div>
                 </div>
+
+                <!-- Trending Stocks -->
                 <div class="popular-stocks" id="popularStocks">
-                    <p class="popular-label">Popular stocks:</p>
+                    <p class="popular-label">🔥 Trending Stocks</p>
                     <div class="popular-list"></div>
+                </div>
+
+                <!-- Stats Bar -->
+                <div class="stats-bar">
+                    <div class="stat-item">
+                        <span class="stat-number">6+</span>
+                        <span class="stat-label">Indicators</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number">30</span>
+                        <span class="stat-label">Day Forecast</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number">95%</span>
+                        <span class="stat-label">Confidence Band</span>
+                    </div>
                 </div>
             </div>
         </div>
